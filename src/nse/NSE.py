@@ -2002,3 +2002,63 @@ class NSE:
         url = f"{self.base_url}/NextApi/apiClient/GetQuoteApi"
 
         return self._req(url, params=params).json()
+
+        def volume_gainers(self) -> Dict:
+        """
+        Fetches the live 'Volume Gainers' (Volume Spurts) data.
+
+        Example:
+        from datetime import date
+
+        import pandas as pd
+        from nse import NSE  # Your extended class file
+
+        with NSE(download_folder="./data") as nse:
+            # 1. Fetch live volume gainers
+            raw_data = nse.volume_gainers()
+            spurts = raw_data.get("data", [])
+
+            # 2. Filter for positive price change (pChange > 0)
+            # This mirrors the logic in the original library's gainers() function
+            positive_gainers = [item for item in spurts if item.get("pChange", 0) > 0]
+            positive_gainers = [item for item in spurts if item.get("volume", 0) > 1000000]
+
+            # 3. Sort by highest volume change (week1volChange)
+            # We use reverse=True to get the highest values first
+            sorted_data = sorted(positive_gainers, key=lambda x: x.get("week1volChange", 0), reverse=True)
+            sorted_df = pd.DataFrame(sorted_data)
+
+            sorted_df.sort_values("pChange", inplace=True)
+            sorted_df.to_csv(
+                "/home/userx/Documents/ta_projects/all_projects_storage/csvs_and_watchlists/csvs/volume_gainers_from_nse.csv",
+                index=False,
+            )
+
+            # 4. Print results
+            print(f"{'Symbol':<12} | {'Price %':<10} | {'Vol Change (1W)':<15} | {'LTP':<10}")
+            print("-" * 55)
+            for stock in sorted_data:
+                print(
+                    f"{stock['symbol']:<12} | "
+                    f"{stock['pChange']:>8.2f}% | "
+                    f"{stock['week1volChange']:>14.2f}x | "
+                    f"{stock['ltp']:>10.2f}"
+                )
+        """
+        url = f"{self.base_url}/live-analysis-volume-gainers"
+        return self.__req(url).json()
+
+    def fetch_deliverable_data(self, symbol: str, from_date: date, to_date: date, series: str = "EQ") -> List[Dict]:
+        """
+        Fetches security-wise deliverable data in JSON format.
+        helps in appending delivery information to OHLCV data files.
+        """
+        params = {
+            "from": from_date.strftime("%d-%m-%Y"),
+            "to": to_date.strftime("%d-%m-%Y"),
+            "symbol": symbol.upper(),
+            "type": "deliverable",
+            "series": series.upper(),
+        }
+        url = f"{self.base_url}/historicalOR/generateSecurityWiseHistoricalData"
+        return self.__req(url, params=params).json().get("data", [])
