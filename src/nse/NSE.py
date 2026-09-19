@@ -540,14 +540,18 @@ class NSE:
         url = f"{self.base_url}/corporate-announcements"
 
         return self._transport.request(url, params=params).json()
+        
 
-    def event_calendar(self, index="equities", csv=True):
+    def event_calendar(
+        self, index="equities") -> List[Dict]:
+        """Download the event calendar
+        and return the json.
         """
-        Fetch NSE event calendar (holidays, special sessions).
-        """
-        url = f"{self.base_url}/event-calendar?index={index}&csv={'true' if csv else 'false'}"
-        return self._get_data(url)
 
+        url = f"{self.base_url}/event-calendar?index={index}.csv"
+
+        return self._transport.request(url).json()
+        
     
     def boardMeetings(
         self,
